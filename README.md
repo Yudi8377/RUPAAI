@@ -6,13 +6,13 @@ RUPAAI is a camera-first hair discovery and virtual beauty, grooming, fashion, a
 
 ## Current experience
 
-- **AI Hair Style Simulator** — haircut and hair-color discovery interface with webcam preview.
+- **AI Hair Style Simulator** — webcam preview with local MediaPipe hair segmentation and live hair-color recoloring; haircut choices remain a reference catalog until realistic hairstyle compositing is integrated.
 - **Luxury Hair Studio** — premium salon positioning and consultation workflow entry point.
 - **Camera-first** — permission is requested only after the user chooses to activate the camera.
 - **Local frame export** — download a still preview from the active webcam.
 - **Privacy-minded** — the starter app does not upload camera frames.
 
-> Product honesty: the current milestone provides a live camera preview and selectable style catalog. Photorealistic AI hair segmentation, recoloring, and hairstyle compositing are not integrated yet; the UI states this clearly rather than presenting mock overlays as completed AI.
+> Product honesty: live hair segmentation and color recoloring run in the browser using MediaPipe's hair segmentation model. The model and WebAssembly runtime are downloaded from public CDNs on first use; camera frames are processed locally and are not uploaded by this feature. Haircut selection is still a reference catalog: photorealistic hairstyle replacement, face-aware fitting, and salon account workflows are not integrated yet.
 
 ## Product roadmap
 
@@ -32,7 +32,7 @@ RUPAAI is a camera-first hair discovery and virtual beauty, grooming, fashion, a
 ## Privacy principles
 
 - Camera permission is requested only after the user initiates the experience.
-- The initial camera preview and still-frame export remain in the browser.
+- Camera preview, hair segmentation, recoloring, and still-frame export run in the browser. The AI model/runtime are downloaded from public hosting providers; camera frames are not sent to those providers.
 - The camera stream is stopped when the user turns off the camera or leaves the page.
 - Future cloud generation or processing must require explicit consent and clear retention controls.
 
@@ -47,4 +47,4 @@ npm run build
 
 ## Status
 
-Initial camera-first product foundation. AI rendering, authentication, persistence, salon accounts, billing, and commercial deployment require separate implementation and verification. See [the roadmap](docs/ROADMAP.md).
+Camera-first foundation with a local hair-segmentation/recoloring prototype. The GitHub Actions quality workflow checks TypeScript and production builds; a green run must still be confirmed before release. Photorealistic haircut replacement, authentication, persistence, salon accounts, billing, and commercial deployment require further implementation and verification. See [the roadmap](docs/ROADMAP.md).
