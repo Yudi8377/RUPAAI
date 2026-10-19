@@ -1,0 +1,38 @@
+name: RUPAAI browser smoke tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rupaai-browser-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-smoke:
+    name: Chromium browser smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install application dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Playwright test runner
+        run: npm install --no-save --no-package-lock @playwright/test
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build production assets
+        run: npm run build
+      - name: Run browser smoke tests
+        run: npx playwright test
