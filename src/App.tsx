@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { clearHairOverlay, createHairSegmenter, renderHairColor } from './hairVision';
 import { Aperture, ArrowUpRight, Check, ChevronDown, CircleHelp, Crown, Download, Heart, Menu, Palette, RefreshCw, Scissors, ShieldCheck, Sparkles, Video, VideoOff, WandSparkles } from 'lucide-react';
 
 type Look = { id: string; name: string; note: string; shape: string; tone: string; tint: string };
@@ -18,9 +19,12 @@ const colors = [
 ];
 export default function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const activeColorRef = useRef(colors[1].value);
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [visionStatus, setVisionStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [activeLook, setActiveLook] = useState('layers');
   const [activeColor, setActiveColor] = useState(colors[1].value);
   const [tab, setTab] = useState<'haircuts' | 'colors'>('haircuts');
@@ -28,6 +32,54 @@ export default function App() {
   const [studio, setStudio] = useState(false);
 
   useEffect(() => () => streamRef.current?.getTracks().forEach(track => track.stop()), []);
+  useEffect(() => {
+    activeColorRef.current = activeColor;
+    if (visionStatus === 'ready' && videoRef.current && overlayRef.current) {
+      // The animation loop reads this ref, so color changes do not reload the model.
+    }
+  }, [activeColor, visionStatus]);
+
+  useEffect(() => {
+    if (!cameraOn) {
+      setVisionStatus('idle');
+      clearHairOverlay(overlayRef.current);
+      return;
+    }
+    let cancelled = false;
+    let frame = 0;
+    let lastInference = 0;
+    let segmenter: Awaited<ReturnType<typeof createHairSegmenter>> | null = null;
+    setVisionStatus('loading');
+    createHairSegmenter().then(instance => {
+      if (cancelled) { instance.close(); return; }
+      segmenter = instance;
+      setVisionStatus('ready');
+      const tick = (now: number) => {
+        if (cancelled) return;
+        if (now - lastInference >= 140 && videoRef.current && overlayRef.current && segmenter) {
+          lastInference = now;
+          try {
+            renderHairColor(segmenter, videoRef.current, overlayRef.current, activeColorRef.current, now);
+          } catch {
+            setVisionStatus('error');
+            clearHairOverlay(overlayRef.current);
+            return;
+          }
+        }
+        frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
+    }).catch(() => {
+      if (!cancelled) setVisionStatus('error');
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      segmenter?.close();
+      clearHairOverlay(overlayRef.current);
+    };
+  }, [cameraOn]);
+
   useEffect(() => {
     if (videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current;
   }, [cameraOn]);
@@ -98,13 +150,14 @@ export default function App() {
           <div className="camera-panel-head"><span><span className="status-dot"/> LIVE PREVIEW</span><span className="panel-tag">01 / CAMERA</span></div>
           <div className="camera-stage">
             <video ref={videoRef} autoPlay muted playsInline className={cameraOn ? 'camera-video is-on' : 'camera-video'} aria-label="Pratinjau kamera Anda"/>
+            <canvas ref={overlayRef} className={cameraOn && visionStatus === 'ready' ? 'hair-overlay is-on' : 'hair-overlay'} aria-hidden="true"/>
             {!cameraOn && <div className="camera-placeholder"><div className="camera-orbit"><Video size={29}/></div><strong>Tempatkan dirimu di tengah frame</strong><p>Gunakan pencahayaan lembut dan arahkan kamera ke wajah.</p><button className="button button-light" onClick={startCamera}><Video size={16}/> Aktifkan kamera</button></div>}
             {cameraOn && <div className="camera-overlay"><span className="corner corner-tl"/><span className="corner corner-tr"/><span className="corner corner-bl"/><span className="corner corner-br"/><span className="tracking-label"><span/> CAMERA CONNECTED</span></div>}
             <div className="stage-bottom"><span><span className="stage-dot"/> {cameraOn ? 'Kamera aktif' : 'Menunggu kamera'}</span><span>HD · MIRROR VIEW</span></div>
           </div>
           {cameraError && <p className="error-message" role="alert">{cameraError}</p>}
           <div className="camera-controls"><button className="button button-outline" onClick={cameraOn ? stopCamera : startCamera}>{cameraOn ? <VideoOff size={16}/> : <Video size={16}/>} {cameraOn ? 'Matikan kamera' : 'Hubungkan webcam'}</button><button className="button button-dark" onClick={capturePreview}><Download size={16}/> Simpan frame</button></div>
-          <p className="camera-disclaimer"><CircleHelp size={14}/> Ini adalah pratinjau kamera. Simulasi potongan fotorealistis berbasis AI akan diaktifkan pada tahap integrasi vision berikutnya.</p>
+          <p className="camera-disclaimer"><CircleHelp size={14}/> Warna rambut menggunakan segmentasi AI MediaPipe di browser. Efek warna bersifat pratinjau; bentuk potongan rambut fotorealistis belum diterapkan. Frame kamera tidak dikirim ke server.</p>
         </div>
 
         <div className="look-panel">
@@ -114,7 +167,7 @@ export default function App() {
           <div className="selection-summary"><div className="summary-swatch" style={{background:activeColor}}/><div><small>YOUR CURRENT SELECTION</small><strong>{selected.name} <span>·</span> {colors.find(c => c.value === activeColor)?.name}</strong></div><button aria-label="Simpan pilihan" className={'favorite-button ' + (saved ? 'is-saved' : '')} onClick={() => setSaved(!saved)}><Heart size={17} fill={saved ? 'currentColor' : 'none'}/></button></div>
           {saved && <p className="saved-message" role="status">Pilihan tersimpan untuk sesi ini di perangkat Anda.</p>}
           <button className="button button-gold full-button" onClick={() => setStudio(true)}><WandSparkles size={16}/> Konsultasi Luxury Hair Studio <ArrowUpRight size={16}/></button>
-          <p className="panel-footnote">Pilihan gaya saat ini adalah eksplorasi katalog; overlay rambut realistis memerlukan model segmentasi dan rendering khusus.</p>
+          <p className="panel-footnote">Warna rambut dapat dipratinjau dengan segmentasi AI setelah kamera aktif. Pilihan potongan rambut masih berupa referensi katalog dan belum mengubah bentuk rambut secara fotorealistis.</p>
         </div>
       </div>
     </section>
