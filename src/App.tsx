@@ -116,6 +116,7 @@ export default function App() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.translate(canvas.width, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0);
+    if (overlayRef.current && visionStatus === 'ready') ctx.drawImage(overlayRef.current, 0, 0, canvas.width, canvas.height);
     const link = document.createElement('a');
     link.download = 'rupaai-camera-preview.png'; link.href = canvas.toDataURL('image/png'); link.click();
   }
@@ -156,6 +157,9 @@ export default function App() {
             <div className="stage-bottom"><span><span className="stage-dot"/> {cameraOn ? 'Kamera aktif' : 'Menunggu kamera'}</span><span>HD · MIRROR VIEW</span></div>
           </div>
           {cameraError && <p className="error-message" role="alert">{cameraError}</p>}
+          {cameraOn && visionStatus === 'loading' && <p className="vision-status" role="status">Memuat model segmentasi rambut di perangkat ini…</p>}
+          {cameraOn && visionStatus === 'ready' && <p className="vision-status" role="status">AI segmentasi rambut aktif · pemrosesan lokal</p>}
+          {cameraOn && visionStatus === 'error' && <p className="vision-status vision-warning" role="status">Model AI belum tersedia. Pratinjau kamera tetap berfungsi; periksa koneksi internet lalu mulai ulang kamera.</p>}
           <div className="camera-controls"><button className="button button-outline" onClick={cameraOn ? stopCamera : startCamera}>{cameraOn ? <VideoOff size={16}/> : <Video size={16}/>} {cameraOn ? 'Matikan kamera' : 'Hubungkan webcam'}</button><button className="button button-dark" onClick={capturePreview}><Download size={16}/> Simpan frame</button></div>
           <p className="camera-disclaimer"><CircleHelp size={14}/> Warna rambut menggunakan segmentasi AI MediaPipe di browser. Efek warna bersifat pratinjau; bentuk potongan rambut fotorealistis belum diterapkan. Frame kamera tidak dikirim ke server.</p>
         </div>
