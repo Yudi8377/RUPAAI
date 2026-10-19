@@ -1,7 +1,11 @@
 import { FilesetResolver, ImageSegmenter } from '@mediapipe/tasks-vision';
 
-const WASM_ROOT = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm';
+const WASM_ROOTS = [
+  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm',
+  'https://unpkg.com/@mediapipe/tasks-vision@0.10.22/wasm',
+] as const;
 const HAIR_MODEL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/hair_segmenter/float32/1/hair_segmenter.tflite';
+const MODEL_DOWNLOAD_TIMEOUT_MS = 25_000;
 
 export type HairVisionStatus = 'loading' | 'ready' | 'error';
 
@@ -13,23 +17,80 @@ type MaskBuffer = {
 
 const maskBuffers = new WeakMap<HTMLCanvasElement, MaskBuffer>();
 
-export async function createHairSegmenter(): Promise<ImageSegmenter> {
-  const vision = await FilesetResolver.forVisionTasks(WASM_ROOT);
-  const options = {
-    baseOptions: { modelAssetPath: HAIR_MODEL },
-    runningMode: 'VIDEO' as const,
-    outputCategoryMask: true,
-    outputConfidenceMasks: false,
-  };
+async function downloadHairModel(): Promise<Uint8Array> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), MODEL_DOWNLOAD_TIMEOUT_MS);
   try {
-    return await ImageSegmenter.createFromOptions(vision, {
-      ...options,
-      baseOptions: { ...options.baseOptions, delegate: 'GPU' },
+    const response = await fetch(HAIR_MODEL, {
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'force-cache',
+      signal: controller.signal,
     });
-  } catch {
-    // Some browsers or devices do not support the GPU delegate; use CPU as a fallback.
-    return ImageSegmenter.createFromOptions(vision, options);
+    if (!response.ok) {
+      throw new Error(`Server model mengembalikan HTTP ${response.status}.`);
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength < 100_000) {
+      throw new Error('File model yang diterima terlalu kecil atau bukan file model yang valid.');
+    }
+    return bytes;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Unduhan model AI melewati batas waktu 25 detik.');
+    }
+    if (error instanceof TypeError) {
+      throw new Error('Model AI tidak dapat diunduh. Periksa koneksi internet, VPN, firewall, atau pemblokir konten.');
+    }
+    throw error instanceof Error ? error : new Error('Unduhan model AI gagal.');
+  } finally {
+    window.clearTimeout(timeout);
   }
+}
+
+export async function createHairSegmenter(): Promise<ImageSegmenter> {
+  let modelBuffer: Uint8Array;
+  try {
+    modelBuffer = await downloadHairModel();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'kesalahan unduhan tidak diketahui';
+    throw new Error(`Model AI rambut gagal dimuat: ${detail}`);
+  }
+
+  const failures: string[] = [];
+  for (const wasmRoot of WASM_ROOTS) {
+    try {
+      const vision = await FilesetResolver.forVisionTasks(wasmRoot);
+      const options = {
+        baseOptions: { modelAssetBuffer: modelBuffer },
+        runningMode: 'VIDEO' as const,
+        outputCategoryMask: true,
+        outputConfidenceMasks: false,
+      };
+
+      try {
+        return await ImageSegmenter.createFromOptions(vision, {
+          ...options,
+          baseOptions: { ...options.baseOptions, delegate: 'GPU' },
+        });
+      } catch (gpuError) {
+        // GPU is not supported consistently across browsers/devices; retry on CPU.
+        try {
+          return await ImageSegmenter.createFromOptions(vision, options);
+        } catch (cpuError) {
+          const detail = cpuError instanceof Error ? cpuError.message : String(cpuError);
+          failures.push(`${new URL(wasmRoot).hostname}: ${detail}`);
+          // Continue to the alternate WASM CDN if this runtime cannot initialize.
+          void gpuError;
+        }
+      }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      failures.push(`${new URL(wasmRoot).hostname}: ${detail}`);
+    }
+  }
+
+  throw new Error(`Runtime AI tidak dapat dijalankan pada perangkat ini. ${failures.join(' | ')}`);
 }
 
 function getMaskBuffer(
@@ -93,7 +154,6 @@ export function renderHairColor(
       canvas.height = video.videoHeight;
     }
     context.clearRect(0, 0, canvas.width, canvas.height);
-    // Slightly feather the binary mask to reduce jagged edges around individual strands.
     context.filter = 'blur(0.7px)';
     context.drawImage(buffer.canvas, 0, 0, canvas.width, canvas.height);
     context.filter = 'none';
