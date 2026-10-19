@@ -7,12 +7,21 @@ export type HairVisionStatus = 'loading' | 'ready' | 'error';
 
 export async function createHairSegmenter(): Promise<ImageSegmenter> {
   const vision = await FilesetResolver.forVisionTasks(WASM_ROOT);
-  return ImageSegmenter.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: HAIR_MODEL, delegate: 'GPU' },
-    runningMode: 'VIDEO',
+  const options = {
+    baseOptions: { modelAssetPath: HAIR_MODEL },
+    runningMode: 'VIDEO' as const,
     outputCategoryMask: true,
     outputConfidenceMasks: false,
-  });
+  };
+  try {
+    return await ImageSegmenter.createFromOptions(vision, {
+      ...options,
+      baseOptions: { ...options.baseOptions, delegate: 'GPU' },
+    });
+  } catch {
+    // Some browsers or devices do not support the GPU delegate; use CPU as a fallback.
+    return ImageSegmenter.createFromOptions(vision, options);
+  }
 }
 
 /**
