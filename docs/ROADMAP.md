@@ -10,7 +10,8 @@
 - [x] Integrate MediaPipe hair segmentation and live hair-color recoloring in the browser
 - [x] Add GPU-to-CPU fallback and visible model loading/error states
 - [x] Add automated TypeScript/production-build workflow
-- [ ] Confirm a passing remote workflow and run browser/device tests before release
+- [x] Confirm a passing remote workflow (GitHub Actions run #10, commit `029b767`)
+- [ ] Run browser/device tests before release
 
 ## Milestone 2 — Real hair visualization
 - Add face landmarks and head-pose estimation for hairstyle alignment.
