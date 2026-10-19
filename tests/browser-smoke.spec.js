@@ -34,3 +34,15 @@ test('hair color controls are available without starting the camera', async ({ p
   await expect(page.getByText('Privasi diutamakan')).toBeVisible();
   expect(await page.evaluate(() => Boolean(navigator.mediaDevices?.getUserMedia))).toBe(true);
 });
+
+
+test('camera preview remains usable and explains a blocked AI model download', async ({ page, context }) => {
+  await context.grantPermissions(['camera']);
+  await page.route('https://storage.googleapis.com/mediapipe-models/**', route => route.abort());
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Aktifkan kamera' }).click();
+
+  await expect(page.getByText(/Model AI rambut gagal dimuat/i)).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('video.camera-video')).toHaveClass(/is-on/);
+});
