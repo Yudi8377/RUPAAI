@@ -15,7 +15,7 @@ test('landing page renders and camera access starts only after user action', asy
     }
   });
 
-  const pageErrors: string[] = [];
+  const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Rambut baru/i })).toBeVisible();
