@@ -26,6 +26,7 @@ export default function App() {
   const [cameraStarting, setCameraStarting] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [visionStatus, setVisionStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [visionError, setVisionError] = useState('');
   const [activeLook, setActiveLook] = useState('layers');
   const [activeColor, setActiveColor] = useState(colors[1].value);
   const [tab, setTab] = useState<'haircuts' | 'colors'>('haircuts');
@@ -50,6 +51,7 @@ export default function App() {
     let frame = 0;
     let lastInference = 0;
     let segmenter: Awaited<ReturnType<typeof createHairSegmenter>> | null = null;
+    setVisionError('');
     setVisionStatus('loading');
     createHairSegmenter().then(instance => {
       if (cancelled) { instance.close(); return; }
@@ -61,7 +63,8 @@ export default function App() {
           lastInference = now;
           try {
             renderHairColor(segmenter, videoRef.current, overlayRef.current, activeColorRef.current, now);
-          } catch {
+          } catch (error) {
+            setVisionError(error instanceof Error ? error.message : 'Proses segmentasi rambut gagal. Mulai ulang kamera untuk mencoba lagi.');
             setVisionStatus('error');
             clearHairOverlay(overlayRef.current);
             return;
@@ -70,8 +73,11 @@ export default function App() {
         frame = requestAnimationFrame(tick);
       };
       frame = requestAnimationFrame(tick);
-    }).catch(() => {
-      if (!cancelled) setVisionStatus('error');
+    }).catch(error => {
+      if (!cancelled) {
+        setVisionError(error instanceof Error ? error.message : 'Model AI gagal dimuat. Periksa koneksi internet lalu coba lagi.');
+        setVisionStatus('error');
+      }
     });
     return () => {
       cancelled = true;
@@ -187,7 +193,7 @@ export default function App() {
           {cameraError && <p className="error-message" role="alert">{cameraError}</p>}
           {cameraOn && visionStatus === 'loading' && <p className="vision-status" role="status">Memuat model segmentasi rambut di perangkat ini…</p>}
           {cameraOn && visionStatus === 'ready' && <p className="vision-status" role="status">AI segmentasi rambut aktif · pemrosesan lokal</p>}
-          {cameraOn && visionStatus === 'error' && <p className="vision-status vision-warning" role="status">Model AI belum tersedia. Pratinjau kamera tetap berfungsi; periksa koneksi internet lalu mulai ulang kamera.</p>}
+          {cameraOn && visionStatus === 'error' && <p className="vision-status vision-warning" role="status">Model AI belum tersedia. Pratinjau kamera tetap berfungsi. {visionError || 'Periksa koneksi internet lalu mulai ulang kamera.'}</p>}
           <div className="camera-controls"><button className="button button-outline" onClick={cameraOn ? stopCamera : startCamera} disabled={cameraStarting}>{cameraOn ? <VideoOff size={16}/> : <Video size={16}/>} {cameraOn ? 'Matikan kamera' : cameraStarting ? 'Menghubungkan…' : 'Hubungkan webcam'}</button><button className="button button-dark" onClick={capturePreview}><Download size={16}/> Simpan frame</button></div>
           <p className="camera-disclaimer"><CircleHelp size={14}/> Warna rambut menggunakan segmentasi AI MediaPipe di browser. Efek warna bersifat pratinjau; bentuk potongan rambut fotorealistis belum diterapkan. Frame kamera tidak dikirim ke server.</p>
         </div>
