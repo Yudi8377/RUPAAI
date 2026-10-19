@@ -93,7 +93,10 @@ export function renderHairColor(
       canvas.height = video.videoHeight;
     }
     context.clearRect(0, 0, canvas.width, canvas.height);
+    // Slightly feather the binary mask to reduce jagged edges around individual strands.
+    context.filter = 'blur(0.7px)';
     context.drawImage(buffer.canvas, 0, 0, canvas.width, canvas.height);
+    context.filter = 'none';
     context.globalCompositeOperation = 'source-in';
     context.fillStyle = color;
     context.fillRect(0, 0, canvas.width, canvas.height);

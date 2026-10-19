@@ -116,7 +116,12 @@ export default function App() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.translate(canvas.width, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0);
-    if (overlayRef.current && visionStatus === 'ready') ctx.drawImage(overlayRef.current, 0, 0, canvas.width, canvas.height);
+    if (overlayRef.current && visionStatus === 'ready') {
+      // Match the live preview's color blend so exported images retain hair shading.
+      ctx.globalCompositeOperation = 'color';
+      ctx.drawImage(overlayRef.current, 0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = 'source-over';
+    }
     const link = document.createElement('a');
     link.download = 'rupaai-camera-preview.png'; link.href = canvas.toDataURL('image/png'); link.click();
   }
