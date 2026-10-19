@@ -103,6 +103,17 @@ export default function App() {
       }
       streamRef.current?.getTracks().forEach(track => track.stop());
       streamRef.current = stream;
+      const handleTrackEnded = () => {
+        // Ignore stale streams if a newer camera session has already started.
+        if (streamRef.current !== stream) return;
+        streamRef.current = null;
+        if (videoRef.current) videoRef.current.srcObject = null;
+        setCameraOn(false);
+        setCameraError('Koneksi kamera terputus. Periksa perangkat kamera lalu hubungkan kembali.');
+      };
+      stream.getVideoTracks().forEach(track => {
+        track.addEventListener('ended', handleTrackEnded, { once: true });
+      });
       videoRef.current.srcObject = stream;
       setCameraOn(true);
     } catch {
