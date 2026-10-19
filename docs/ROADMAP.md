@@ -7,12 +7,16 @@
 - [x] Haircut/color catalog selection and session-only favorite
 - [x] Privacy copy and honest disclosure of current limitations
 - [x] Luxury Hair Studio positioning for salons
-- [ ] Browser test matrix and production deployment validation
+- [x] Integrate MediaPipe hair segmentation and live hair-color recoloring in the browser
+- [x] Add GPU-to-CPU fallback and visible model loading/error states
+- [x] Add automated TypeScript/production-build workflow
+- [ ] Confirm a passing remote workflow and run browser/device tests before release
 
 ## Milestone 2 — Real hair visualization
-- Add face landmarks and hair/face segmentation.
+- Add face landmarks and head-pose estimation for hairstyle alignment.
 - Build a rendering pipeline that anchors hairstyle assets to facial geometry and head pose.
-- Add realistic color compositing with lighting preservation and occlusion handling.
+- Improve the current prototype with lighting-preserving color compositing, feathered masks, and occlusion handling.
+- Integrate photorealistic haircut replacement; the current catalog does not alter haircut geometry.
 - Establish a curated hairstyle asset pack with documented commercial licenses.
 - Evaluate browser performance on entry-level laptops and mobile devices.
 - Test across skin tones, hair textures, lighting conditions, glasses, and head poses.
