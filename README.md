@@ -36,6 +36,15 @@ RUPAAI is a camera-first hair discovery and virtual beauty, grooming, fashion, a
 - The camera stream is stopped when the user turns off the camera or leaves the page.
 - Future cloud generation or processing must require explicit consent and clear retention controls.
 
+## Install on your devices
+
+- **Desktop:** open the HTTPS site in a modern browser; install from the browser address bar when supported.
+- **Android:** install as a PWA from Chrome, or use the internal debug APK produced by the GitHub Actions workflow `RUPAAI Android APK` (QA only, unsigned release).
+- **iPhone/iPad:** open in Safari and use Share → Add to Home Screen. A native App Store build still requires macOS/Xcode and Apple signing.
+- See [cross-platform distribution and QA](docs/CROSS_PLATFORM.md).
+
+PWA installation does not make the AI model fully offline. The current haircut cards remain references; only hair-color preview is implemented.
+
 ## Development
 
 ```bash
