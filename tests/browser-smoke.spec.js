@@ -69,3 +69,15 @@ test('layout remains usable on a narrow mobile viewport', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Pasang aplikasi RUPAAI' })).toBeVisible();
   await expect(page.locator('.studio-grid')).toBeVisible();
 });
+
+
+test('haircut and color controls update the selected reference without claiming a cut is applied', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('tab', { name: 'Hair colors' }).click();
+  await page.getByRole('button', { name: 'Pilih warna Copper' }).click();
+  await expect(page.locator('.selection-summary')).toContainText('Copper');
+  await page.getByRole('tab', { name: 'Haircuts' }).click();
+  await page.getByRole('button', { name: /Modern Pixie/i }).click();
+  await expect(page.locator('.selection-summary')).toContainText('Modern Pixie');
+  await expect(page.locator('.panel-footnote')).toContainText('belum mengubah bentuk rambut');
+});
