@@ -1,0 +1,51 @@
+name: RUPAAI production deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rupaai-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy to Vercel production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ vars.VERCEL_ORG_ID != '' && vars.VERCEL_PROJECT_ID != '' }}
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify deployment credentials exist
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Add the VERCEL_TOKEN GitHub Actions secret."
+            exit 1
+          fi
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install application dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify type safety
+        run: npm run typecheck
+      - name: Build application
+        run: npm run build
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Pull production project settings
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build Vercel production output
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy production output
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
