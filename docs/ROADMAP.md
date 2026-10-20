@@ -13,6 +13,13 @@
 - [x] Confirm a passing remote workflow (GitHub Actions run #10, commit `029b767`)
 - [ ] Run browser/device tests before release
 
+## Cross-platform delivery foundation
+- [x] Add PWA manifest, app icons, basic service-worker caching, and install guidance.
+- [x] Add Capacitor configuration and Android debug APK workflow for QA.
+- [ ] Verify Android APK workflow output and test camera permissions on physical Android devices.
+- [ ] Generate and sign native iOS build on macOS/Xcode; validate iPhone/iPad camera behavior.
+- [ ] Test PWA installability, orientation, touch controls, and low-memory devices across form factors.
+
 ## Milestone 2 — Real hair visualization
 - Add face landmarks and head-pose estimation for hairstyle alignment.
 - Build a rendering pipeline that anchors hairstyle assets to facial geometry and head pose.
