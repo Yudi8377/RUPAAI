@@ -6,7 +6,7 @@ RUPAAI is a camera-first hair discovery and virtual beauty, grooming, fashion, a
 
 ## Current experience
 
-- **AI Hair Style Simulator** — webcam preview with local MediaPipe hair segmentation and live hair-color recoloring; haircut choices remain a reference catalog until realistic hairstyle compositing is integrated.
+- **AI Hair Style Simulator** — webcam preview with local MediaPipe hair segmentation, confidence-mask edge feathering, temporal smoothing, and live hair-color recoloring; haircut choices remain a reference catalog until realistic hairstyle compositing is integrated. Exported previews align the mirrored mask with the mirrored camera image.
 - **Luxury Hair Studio** — premium salon positioning and consultation workflow entry point.
 - **Camera-first** — permission is requested only after the user chooses to activate the camera.
 - **Local frame export** — download a still preview from the active webcam.
