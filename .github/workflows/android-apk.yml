@@ -50,6 +50,18 @@ jobs:
         run: npm run build
       - name: Generate Android native project
         run: npx cap add android
+      - name: Declare native camera capability
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          content = manifest.read_text()
+          marker = '    <application'
+          permissions = '    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera.any" android:required="false" />\n'
+          if 'android.permission.CAMERA' not in content:
+              content = content.replace(marker, permissions + marker, 1)
+          manifest.write_text(content)
+          PY
       - name: Sync web assets to Android
         run: npx cap sync android
       - name: Build debug APK
