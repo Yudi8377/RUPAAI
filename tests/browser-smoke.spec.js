@@ -46,3 +46,26 @@ test('camera preview remains usable and explains a blocked AI model download', a
   await expect(page.getByText(/Model AI rambut gagal dimuat/i)).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('video.camera-video')).toHaveClass(/is-on/);
 });
+
+
+test('PWA metadata is present and installation guidance works', async ({ page }) => {
+  await page.goto('/');
+  const manifest = await page.locator('link[rel="manifest"]').getAttribute('href');
+  expect(manifest).toBe('/manifest.webmanifest');
+  const response = await page.request.get('/manifest.webmanifest');
+  expect(response.ok()).toBeTruthy();
+  const data = await response.json();
+  expect(data.name).toContain('RUPAAI');
+  expect(data.display).toBe('standalone');
+  await page.getByRole('button', { name: 'Pasang aplikasi RUPAAI' }).click();
+  await expect(page.getByRole('dialog', { name: /Pasang untuk akses lebih cepat/i })).toBeVisible();
+  await expect(page.getByRole('dialog')).toContainText('Add to Home Screen');
+});
+
+test('layout remains usable on a narrow mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Rambut baru/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pasang aplikasi RUPAAI' })).toBeVisible();
+  await expect(page.locator('.studio-grid')).toBeVisible();
+});

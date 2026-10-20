@@ -3,6 +3,7 @@ import { clearHairOverlay, createHairSegmenter, renderHairColor } from './hairVi
 import { Aperture, ArrowUpRight, Check, ChevronDown, CircleHelp, Crown, Download, Heart, Menu, Palette, RefreshCw, Scissors, ShieldCheck, Sparkles, Video, VideoOff, WandSparkles } from 'lucide-react';
 
 type Look = { id: string; name: string; note: string; shape: string; tone: string; tint: string };
+type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform?: string }> };
 const looks: Look[] = [
   { id: 'bob', name: 'French Bob', note: 'Chic · Struktur', shape: 'French bob', tone: 'bob', tint: '#3a2924' },
   { id: 'layers', name: 'Soft Layers', note: 'Natural · Flowing', shape: 'soft layers', tone: 'layers', tint: '#5c3a29' },
@@ -32,8 +33,25 @@ export default function App() {
   const [tab, setTab] = useState<'haircuts' | 'colors'>('haircuts');
   const [saved, setSaved] = useState(false);
   const [studio, setStudio] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [installHelp, setInstallHelp] = useState(false);
+  const [appInstalled, setAppInstalled] = useState(window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
 
   useEffect(() => () => streamRef.current?.getTracks().forEach(track => track.stop()), []);
+  useEffect(() => {
+    const onBeforeInstall = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPromptEvent); };
+    const onInstalled = () => { setAppInstalled(true); setInstallPrompt(null); setInstallHelp(false); };
+    window.addEventListener('beforeinstallprompt', onBeforeInstall);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => { window.removeEventListener('beforeinstallprompt', onBeforeInstall); window.removeEventListener('appinstalled', onInstalled); };
+  }, []);
+
+  async function handleInstallApp() {
+    if (!installPrompt) { setInstallHelp(true); return; }
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === 'accepted') setInstallPrompt(null);
+  }
   useEffect(() => {
     activeColorRef.current = activeColor;
     if (visionStatus === 'ready' && videoRef.current && overlayRef.current) {
@@ -160,7 +178,7 @@ export default function App() {
     <header className="topbar">
       <a className="brand" href="#" aria-label="RUPAAI beranda"><span className="brand-mark"><Aperture size={20}/></span><span>RUPA<span className="brand-ai">AI</span></span></a>
       <nav className="desktop-nav" aria-label="Navigasi utama"><a className="nav-active" href="#simulator">Hair Simulator</a><a href="#studio">Luxury Studio</a><a href="#how-it-works">Cara Kerja</a></nav>
-      <div className="top-actions"><span className="live-pill"><span/> WEBCAM FIRST</span><button className="icon-button mobile-menu" aria-label="Menu"><Menu size={19}/></button><a className="top-cta" href="#simulator">Coba sekarang <ArrowUpRight size={15}/></a></div>
+      <div className="top-actions"><span className="live-pill"><span/> WEBCAM FIRST</span>{!appInstalled && <button className="install-cta" onClick={handleInstallApp} aria-label="Pasang aplikasi RUPAAI">{installPrompt ? 'Pasang aplikasi' : 'Cara memasang'}</button>}<button className="icon-button mobile-menu" aria-label="Menu"><Menu size={19}/></button><a className="top-cta" href="#simulator">Coba sekarang <ArrowUpRight size={15}/></a></div>
     </header>
 
     <section className="hero">
@@ -216,6 +234,7 @@ export default function App() {
 
     <footer className="footer"><a className="brand" href="/"><span className="brand-mark"><Aperture size={18}/></span><span>RUPA<span className="brand-ai">AI</span></span></a><span>Your Look. Your Style. Your AI.</span><nav className="footer-links" aria-label="Informasi legal"><a href="/privacy.html">Kebijakan Privasi</a><a href="/terms.html">Ketentuan Penggunaan</a></nav><span>© 2026 RUPAAI · Pratinjau prototipe.</span></footer>
 
+    {installHelp && <div className="modal-backdrop" role="presentation" onClick={() => setInstallHelp(false)}><section className="studio-modal" role="dialog" aria-modal="true" aria-labelledby="install-title" onClick={e => e.stopPropagation()}><button className="modal-close" onClick={() => setInstallHelp(false)} aria-label="Tutup">×</button><div className="modal-icon"><Aperture size={22}/></div><div className="eyebrow">RUPAAI DI PERANGKATMU</div><h2 id="install-title">Pasang untuk akses lebih cepat.</h2><p>Gunakan koneksi HTTPS. Di Android/Chrome pilih menu ⋮ lalu “Install app” atau “Tambahkan ke layar utama”. Di iPhone/iPad, buka melalui Safari, tekan Bagikan, lalu “Add to Home Screen”. Di desktop, gunakan ikon instalasi di bilah alamat jika tersedia.</p><p className="panel-footnote">Akses kamera tetap membutuhkan izin. Model AI diunduh saat diperlukan dan pengalaman offline penuh belum tersedia.</p><button className="button button-dark full-button" onClick={() => setInstallHelp(false)}>Mengerti <Check size={16}/></button></section></div>}
     {studio && <div className="modal-backdrop" role="presentation" onClick={() => setStudio(false)}><section className="studio-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onClick={e => e.stopPropagation()}><button className="modal-close" onClick={() => setStudio(false)} aria-label="Tutup">×</button><div className="modal-icon"><Crown size={22}/></div><div className="eyebrow">LUXURY HAIR STUDIO</div><h2 id="modal-title">Elevasi pengalaman salonmu.</h2><p>Modul profesional sedang disiapkan. Fondasi berikutnya mencakup profil salon, konsultasi stylist, katalog gaya premium, serta visualisasi rambut berbasis AI.</p><div className="modal-current"><span className="summary-swatch" style={{background:activeColor}}/><span><small>PILIHAN SAAT INI</small><strong>{selected.name} · {colors.find(c => c.value === activeColor)?.name}</strong></span></div><button className="button button-dark full-button" onClick={() => setStudio(false)}>Kembali ke simulator <ChevronDown size={16}/></button></section></div>}
   </main>;
 }
