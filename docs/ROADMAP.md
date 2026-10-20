@@ -23,7 +23,9 @@
 ## Milestone 2 — Real hair visualization
 - Add face landmarks and head-pose estimation for hairstyle alignment.
 - Build a rendering pipeline that anchors hairstyle assets to facial geometry and head pose.
-- [x] Improve color compositing with a feathered mask and lighting-preserving color blend for live preview and PNG export (PR #3; occlusion handling remains open).
+- [x] Improve color compositing with confidence-based masks, feathered edges, temporal smoothing, and lighting-preserving color blend for live preview.
+- [x] Correct mirrored overlay alignment in PNG export so the color mask matches the mirrored camera frame.
+- [ ] Validate color-mask accuracy under diverse hair textures, highlights, curls, glasses, head turns, and backlighting on physical devices.
 - Integrate photorealistic haircut replacement; the current catalog does not alter haircut geometry.
 - Establish a curated hairstyle asset pack with documented commercial licenses.
 - Evaluate browser performance on entry-level laptops and mobile devices.
