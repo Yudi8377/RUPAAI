@@ -43,3 +43,10 @@ The GitHub Actions quality workflow checks TypeScript and the Vite production bu
 ## Operational caution
 
 A successful Vercel deployment means the hosting build completed; it is not a certification of commercial readiness. Keep the public offer aligned with the features actually implemented and tested.
+
+
+## Android, iOS, tablet and desktop packaging
+
+See [CROSS_PLATFORM.md](CROSS_PLATFORM.md) for the current supported paths and release gates. The app now includes a PWA manifest, a basic service worker, installation guidance, and a Capacitor native wrapper configuration. Android debug APK generation is defined in `.github/workflows/android-apk.yml`.
+
+Important: the Android workflow output is a QA debug APK, not a signed release. iOS native signing and distribution still require macOS/Xcode and Apple Developer credentials. Cross-device packaging does not imply that photorealistic haircut replacement is implemented. Real-device camera and performance validation remain release gates.
